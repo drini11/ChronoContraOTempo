@@ -1,0 +1,9 @@
+CRÉDITOS DOS ASSETS
+===================
+- Chrono/Onorhc (sprites): "Fantasy Warrior" - licença CC0 (Chrono/License.txt do pack original).
+- Minotauro Ancião (sprites):
+- Golem Steampunk (sprites "Old Golem"):
+- Cenários (menu, fase 1, fase 2, fase 3):
+- Músicas (menu, fase 1, fase 2, fase 3): Nero's Day At Disneyland
+- Efeitos sonoros:
+- Fonte DejaVu Sans Bold: licença livre, ver fonts/LICENSE-DejaVu.txt
