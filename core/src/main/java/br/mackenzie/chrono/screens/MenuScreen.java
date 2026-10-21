@@ -61,7 +61,7 @@ public final class MenuScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             switch (selected) {
                 case START:
-                    message = "Em desenvolvimento.";
+                    game.setScreen(new GameScreen(game, 0));
                     break;
                 case HELP:
                     showHelp = true;
