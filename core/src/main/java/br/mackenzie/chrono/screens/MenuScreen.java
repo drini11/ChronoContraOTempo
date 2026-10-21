@@ -61,7 +61,7 @@ public final class MenuScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             switch (selected) {
                 case START:
-                    message = "A partida será criada nos próximos passos.";
+                    message = "Em desenvolvimento.";
                     break;
                 case HELP:
                     showHelp = true;
