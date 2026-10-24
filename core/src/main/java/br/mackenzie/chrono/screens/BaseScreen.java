@@ -21,9 +21,13 @@ abstract class BaseScreen implements Screen {
     }
 
     protected void beginFrame() {
+        beginFrame(0f, 0f);
+    }
+
+    protected void beginFrame(float shakeX, float shakeY) {
         ScreenUtils.clear(0f, 0f, 0f, 1f);
         viewport.apply();
-        camera.position.set(Assets.W / 2f, Assets.H / 2f, 0f);
+        camera.position.set(Assets.W / 2f + shakeX, Assets.H / 2f + shakeY, 0f);
         camera.update();
         game.batch.setProjectionMatrix(camera.combined);
         game.shapes.setProjectionMatrix(camera.combined);

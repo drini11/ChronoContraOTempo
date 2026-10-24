@@ -31,6 +31,13 @@ public final class Draw {
         font.setColor(Color.WHITE);
     }
 
+    public static void right(SpriteBatch batch, BitmapFont font, String text, float xRight, float top, Color color) {
+        font.setColor(color);
+        layout.setText(font, text);
+        font.draw(batch, text, xRight - layout.width, top);
+        font.setColor(Color.WHITE);
+    }
+
     public static Color gradeColor(HitGrade grade) {
         switch (grade) {
             case CRITICAL: return GOLD;
