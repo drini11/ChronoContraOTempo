@@ -24,4 +24,8 @@ public final class Fmt {
     public static String target(float t) {
         return String.format(Locale.US, "%.1f", t).replace('.', ',');
     }
+
+    public static String pct(double p) {
+        return String.format(Locale.US, "%.0f", p) + "%";
+    }
 }

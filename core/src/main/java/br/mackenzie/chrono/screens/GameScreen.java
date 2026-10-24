@@ -19,6 +19,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import br.mackenzie.chrono.logic.PhaseStats;
+import br.mackenzie.chrono.logic.RunSession;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -62,6 +64,8 @@ public final class GameScreen extends BaseScreen {
     }
 
     private final int phaseIndex;
+    private final RunSession run;
+    private final int attempt;
     private final Phase phase;
     private final BattleModel model;
     private final Texture background;
@@ -95,9 +99,11 @@ public final class GameScreen extends BaseScreen {
     private float flashLeft;
     private float shakeLeft;
 
-    public GameScreen(ChronoGame game, int phaseIndex) {
+    public GameScreen(ChronoGame game, RunSession run, int phaseIndex) {
         super(game);
+        this.run = run;
         this.phaseIndex = phaseIndex;
+        this.attempt = run.nextAttempt(phaseIndex);
         this.phase = Phase.ALL[phaseIndex];
         this.model = new BattleModel(phase);
         this.background = game.assets.texture("backgrounds/bg_fase" + phase.number + ".jpg", false);
@@ -282,8 +288,15 @@ public final class GameScreen extends BaseScreen {
     }
 
     private void finishPhase(boolean cleared) {
-        if (cleared && phaseIndex < Phase.count() - 1) game.setScreen(new GameScreen(game, phaseIndex + 1));
-        else game.setScreen(new MenuScreen(game));
+        PhaseStats stats = model.finish(attempt, cleared);
+        if (cleared) run.addCleared(stats);
+
+        EndScreen.Kind kind;
+        if (!cleared) kind = EndScreen.Kind.DEFEAT;
+        else if (phaseIndex == Phase.count() - 1) kind = EndScreen.Kind.VICTORY;
+        else kind = EndScreen.Kind.CLEARED;
+
+        game.setScreen(new EndScreen(game, run, phaseIndex, stats, kind));
     }
 
     private void updateEffects(float delta) {

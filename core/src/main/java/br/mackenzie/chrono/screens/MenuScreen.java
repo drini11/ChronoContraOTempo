@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.Align;
+import br.mackenzie.chrono.logic.RunSession;
 
 public final class MenuScreen extends BaseScreen {
     private static final int START = 0, HELP = 1;
@@ -61,7 +62,7 @@ public final class MenuScreen extends BaseScreen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             switch (selected) {
                 case START:
-                    game.setScreen(new GameScreen(game, 0));
+                    game.setScreen(new GameScreen(game, new RunSession(), 0));
                     break;
                 case HELP:
                     showHelp = true;

@@ -67,6 +67,10 @@ public final class BattleModel {
         return r;
     }
 
+    public PhaseStats finish(int attempt, boolean cleared) {
+        return PhaseStats.compute(phase, attempt, cleared, results, bestCombo, score);
+    }
+
     public Phase phase() { return phase; }
     public PlayerHealth player() { return player; }
     public int monsterHp() { return monsterHp; }
