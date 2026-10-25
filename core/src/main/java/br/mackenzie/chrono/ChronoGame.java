@@ -7,6 +7,7 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import br.mackenzie.chrono.data.SessionLogger;
+import br.mackenzie.chrono.audio.GameAudio;
 
 public class ChronoGame extends Game {
     public SpriteBatch batch;
@@ -14,6 +15,8 @@ public class ChronoGame extends Game {
     public Assets assets;
     public GameInput input;
     public SessionLogger logger;
+    public GameAudio audio;
+
 
     @Override
     public void create() {
@@ -22,6 +25,8 @@ public class ChronoGame extends Game {
         assets = new Assets();
         input = new GameInput();
         logger = new SessionLogger(SessionLogger.defaultFolder());
+        audio = new GameAudio();
+        audio.preload();
         setScreen(new MenuScreen(this));
     }
 
@@ -34,6 +39,7 @@ public class ChronoGame extends Game {
     @Override
     public void dispose() {
         super.dispose();
+        audio.dispose();
         assets.dispose();
         shapes.dispose();
         batch.dispose();

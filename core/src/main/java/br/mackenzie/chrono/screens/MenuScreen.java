@@ -13,8 +13,8 @@ import com.badlogic.gdx.utils.Align;
 import br.mackenzie.chrono.logic.RunSession;
 
 public final class MenuScreen extends BaseScreen {
-    private static final int START = 0, HELP = 1;
-    private static final String[] LABELS = {"Iniciar jogo", "Como jogar", "Sair"};
+    private static final int START = 0, HELP = 1, SOUND = 2;
+    private static final String[] LABELS = {"Iniciar jogo", "Como jogar", "Som", "Sair"};
 
     private static final String HELP_TEXT =
         "1. Um tempo-alvo aparece na tela (ex.: 4,0 s). Memorize!\n"
@@ -33,14 +33,18 @@ public final class MenuScreen extends BaseScreen {
     private boolean showHelp;
     private String message = "";
 
+
+
     public MenuScreen(ChronoGame game) {
         super(game);
         background = game.assets.texture("backgrounds/bg_menu.jpg", false);
+
     }
 
     @Override
     public void show() {
         game.input.clear();
+        game.audio.playMusic("music/menu.mp3");
     }
 
     @Override
@@ -66,6 +70,10 @@ public final class MenuScreen extends BaseScreen {
                     break;
                 case HELP:
                     showHelp = true;
+                    break;
+                case SOUND:
+                    game.audio.setMuted(!game.audio.isMuted());
+                    if (!game.audio.isMuted()) game.audio.playMusic("music/menu.mp3");
                     break;
                 default:
                     Gdx.app.exit();
@@ -110,7 +118,9 @@ public final class MenuScreen extends BaseScreen {
             Assets.W / 2f, 560f, Draw.GRAY);
         for (int i = 0; i < LABELS.length; i++) {
             Color c = (i == selected && !showHelp) ? Draw.GOLD : Draw.WHITE;
-            Draw.centered(batch, game.assets.medium, LABELS[i], Assets.W / 2f, itemTop(i), c);
+            String label = LABELS[i];
+            if (i == SOUND) label = game.audio.isMuted() ? "Som: desligado" : "Som: ligado";
+            Draw.centered(batch, game.assets.medium, label, Assets.W / 2f, itemTop(i), c);
         }
         Draw.left(batch, game.assets.small,
             flash ? "Botão acionado!" : "Pressione a barra de espaço para testar o botão",

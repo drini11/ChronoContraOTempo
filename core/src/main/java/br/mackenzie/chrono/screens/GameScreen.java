@@ -1,6 +1,7 @@
 package br.mackenzie.chrono.screens;
 
 import br.mackenzie.chrono.ChronoGame;
+import br.mackenzie.chrono.audio.GameAudio;
 import br.mackenzie.chrono.logic.BattleModel;
 import br.mackenzie.chrono.logic.HitGrade;
 import br.mackenzie.chrono.logic.Phase;
@@ -48,6 +49,7 @@ public final class GameScreen extends BaseScreen {
     private static final float CENTER_X = Assets.W / 2f;
 
     private static final FighterType[] ENEMIES = {FighterType.MINOTAUR, FighterType.GOLEM, FighterType.ONORHC};
+    private static final String[] PAUSE_LABELS = {"Continuar", "Som", "Sair para o menu"};
 
     private static final class FloatText {
         final String text;
@@ -96,9 +98,10 @@ public final class GameScreen extends BaseScreen {
     private int shownPlayerHp;
     private int shownScore;
     private int shownCombo;
-
     private float flashLeft;
     private float shakeLeft;
+    private boolean paused;
+    private int pauseSelected;
 
     public GameScreen(ChronoGame game, RunSession run, int phaseIndex) {
         super(game);
@@ -116,20 +119,30 @@ public final class GameScreen extends BaseScreen {
     @Override
     public void show() {
         game.input.clear();
+        game.audio.playMusic("music/fase" + phase.number + ".mp3");
+    }
+
+    @Override
+    public void pause() {
+        if (!paused) openPause();
     }
 
     @Override
     public void render(float delta) {
         delta = Math.min(delta, 0.1f);
-        time += delta;
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            if (model.roundsPlayed() > 0) {
-                game.logger.logPhase(run.id, model.finish(attempt, false), SessionLogger.Outcome.ABANDONO);
-            }
-            game.setScreen(new MenuScreen(game));
+        if (!paused && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            openPause();
+        } else if (paused && handlePauseInput()) {
             return;
         }
+        if (paused) {
+            draw();
+            drawPause();
+            return;
+        }
+
+        time += delta;
 
         update(delta);
         chrono.update(delta);
@@ -162,6 +175,7 @@ public final class GameScreen extends BaseScreen {
                 int shown = countdownNumber();
                 if (shown != lastTick) {
                     lastTick = shown;
+                    game.audio.play(GameAudio.Sfx.TICK);
                 }
                 if (stateTime >= COUNTDOWN_TIME) startRunning();
                 break;
@@ -266,15 +280,25 @@ public final class GameScreen extends BaseScreen {
 
         if (last.damageDealt > 0) {
             enemy.playHit();
-            if (model.isMonsterDefeated()) enemy.playDeath();
+            game.audio.play(hitSound(last.grade));
+            if (model.isMonsterDefeated()) {
+                enemy.playDeath();
+                game.audio.stopMusic();
+                game.audio.play(GameAudio.Sfx.monsterDefeated(phase.number));
+            }
             floats.add(new FloatText("-" + last.damageDealt, ENEMY_X, GROUND_Y + 330f, Draw.gradeColor(last.grade)));
             if (last.grade == HitGrade.CRITICAL) {
                 flashLeft = FLASH_TIME;
                 shakeLeft = SHAKE_TIME;
             }
         } else {
-            chrono.playGlitch();
-            if (model.isPlayerDefeated()) chrono.playDeath();
+            chrono.playGlitch(); // "falha temporal"
+            game.audio.play(GameAudio.Sfx.MISS);
+            if (model.isPlayerDefeated()) {
+                chrono.playDeath();
+                game.audio.stopMusic();
+                game.audio.play(GameAudio.Sfx.PLAYER_DEFEATED);
+            }
             floats.add(new FloatText("-" + last.damageTaken + " HP", PLAYER_X, GROUND_Y + 310f, Draw.RED));
             shakeLeft = SHAKE_TIME * 0.8f;
         }
@@ -285,6 +309,100 @@ public final class GameScreen extends BaseScreen {
         shownPlayerHp = model.player().hp();
         shownScore = model.score();
         shownCombo = model.combo();
+    }
+
+    private static GameAudio.Sfx hitSound(HitGrade grade) {
+        switch (grade) {
+            case CRITICAL: return GameAudio.Sfx.HIT_CRITICAL;
+            case STRONG: return GameAudio.Sfx.HIT_STRONG;
+            default: return GameAudio.Sfx.HIT_WEAK;
+        }
+    }
+    private void openPause() {
+        paused = true;
+        pauseSelected = 0;
+        shakeLeft = 0f;
+        flashLeft = 0f;
+        game.audio.pauseMusic();
+    }
+
+    private boolean handlePauseInput() {
+        while (game.input.poll() != null) {
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            resumeGame();
+            return false;
+        }
+        int n = PAUSE_LABELS.length;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) pauseSelected = (pauseSelected + n - 1) % n;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) pauseSelected = (pauseSelected + 1) % n;
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            switch (pauseSelected) {
+                case 0:
+                    resumeGame();
+                    break;
+                case 1:
+                    game.audio.setMuted(!game.audio.isMuted());
+                    break;
+                default:
+                    quitToMenu();
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private void resumeGame() {
+        paused = false;
+        game.input.clear();
+        if (isRoundInterrupted()) {
+            state = State.SHOW_TARGET;
+            stateTime = 0f;
+            elapsedNow = 0.0;
+            lastTick = 0;
+        }
+        game.audio.resumeMusic();
+    }
+
+    private boolean isRoundInterrupted() {
+        return state == State.COUNTDOWN || state == State.RUNNING;
+    }
+
+    private void quitToMenu() {
+        if (model.roundsPlayed() > 0) {
+            game.logger.logPhase(run.id, model.finish(attempt, false), SessionLogger.Outcome.ABANDONO);
+        }
+        game.setScreen(new MenuScreen(game));
+    }
+
+    private static float pauseItemTop(int i) {
+        return 440f - i * 70f;
+    }
+    private void drawPause() {
+        beginShapes();
+        game.shapes.setColor(0f, 0f, 0f, 0.7f);
+        game.shapes.rect(-50f, -50f, Assets.W + 100f, Assets.H + 100f);
+        game.shapes.setColor(1f, 1f, 1f, 0.14f);
+        game.shapes.rect(440f, pauseItemTop(pauseSelected) - 50f, 400f, 58f);
+        game.shapes.end();
+
+        SpriteBatch batch = game.batch;
+        batch.begin();
+        Draw.centered(batch, game.assets.large, "PAUSADO", CENTER_X, 590f, Draw.GOLD);
+        for (int i = 0; i < PAUSE_LABELS.length; i++) {
+            String label = PAUSE_LABELS[i];
+            if (i == 1) label = game.audio.isMuted() ? "Som: desligado" : "Som: ligado";
+            Color c = i == pauseSelected ? Draw.GOLD : Draw.WHITE;
+            Draw.centered(batch, game.assets.medium, label, CENTER_X, pauseItemTop(i), c);
+        }
+        if (isRoundInterrupted()) {
+            Draw.centered(batch, game.assets.small, "Ao continuar, a rodada recomeça com o mesmo alvo.",
+                CENTER_X, 200f, Draw.GRAY);
+        }
+        Draw.centered(batch, game.assets.small, "↑↓ navegar  ·  ENTER selecionar  ·  ESC continuar",
+            CENTER_X, 60f, Draw.GRAY);
+        batch.end();
     }
 
     private void afterResult() {

@@ -1,6 +1,7 @@
 package br.mackenzie.chrono.screens;
 
 import br.mackenzie.chrono.ChronoGame;
+import br.mackenzie.chrono.audio.GameAudio;
 import br.mackenzie.chrono.logic.PhaseStats;
 import br.mackenzie.chrono.logic.RunSession;
 import br.mackenzie.chrono.ui.Assets;
@@ -42,6 +43,8 @@ public final class EndScreen extends BaseScreen {
     @Override
     public void show() {
         game.input.clear();
+        game.audio.stopMusic();
+        game.audio.play(kind == Kind.DEFEAT ? GameAudio.Sfx.DEFEAT : GameAudio.Sfx.VICTORY);
     }
 
     @Override
@@ -131,10 +134,10 @@ public final class EndScreen extends BaseScreen {
         Draw.right(batch, game.assets.small, "ENTER: continuar  ·  M: menu", 1240f, 700f, Draw.GRAY);
         if (game.logger.ok()) {
             Draw.centered(batch, game.assets.small, "Dados salvos em " + game.logger.folder(),
-                    Assets.W / 2f, 45f, Draw.GRAY);
+                Assets.W / 2f, 45f, Draw.GRAY);
         } else {
             Draw.centered(batch, game.assets.small, "Não foi possível salvar os dados: " + game.logger.lastError(),
-                    Assets.W / 2f, 45f, Draw.RED);
+                Assets.W / 2f, 45f, Draw.RED);
         }
         batch.end();
     }
