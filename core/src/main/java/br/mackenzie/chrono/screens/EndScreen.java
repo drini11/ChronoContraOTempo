@@ -129,6 +129,13 @@ public final class EndScreen extends BaseScreen {
             Draw.centered(batch, game.assets.medium, hint, Assets.W / 2f, 100f, tmp);
         }
         Draw.right(batch, game.assets.small, "ENTER: continuar  ·  M: menu", 1240f, 700f, Draw.GRAY);
+        if (game.logger.ok()) {
+            Draw.centered(batch, game.assets.small, "Dados salvos em " + game.logger.folder(),
+                    Assets.W / 2f, 45f, Draw.GRAY);
+        } else {
+            Draw.centered(batch, game.assets.small, "Não foi possível salvar os dados: " + game.logger.lastError(),
+                    Assets.W / 2f, 45f, Draw.RED);
+        }
         batch.end();
     }
 

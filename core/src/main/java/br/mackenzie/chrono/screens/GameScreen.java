@@ -21,6 +21,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import br.mackenzie.chrono.logic.PhaseStats;
 import br.mackenzie.chrono.logic.RunSession;
+import br.mackenzie.chrono.data.SessionLogger;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -123,6 +124,9 @@ public final class GameScreen extends BaseScreen {
         time += delta;
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (model.roundsPlayed() > 0) {
+                game.logger.logPhase(run.id, model.finish(attempt, false), SessionLogger.Outcome.ABANDONO);
+            }
             game.setScreen(new MenuScreen(game));
             return;
         }
@@ -183,6 +187,7 @@ public final class GameScreen extends BaseScreen {
     private void startRound() {
         target = model.nextTarget();
         round++;
+        if (round == 1) game.logger.beginPhase();
         state = State.SHOW_TARGET;
         stateTime = 0f;
         elapsedNow = 0.0;
@@ -214,6 +219,7 @@ public final class GameScreen extends BaseScreen {
         if (pressNano != null) elapsedNow = elapsed;
 
         last = model.submit(target, elapsed);
+        game.logger.logRound(run.id, phase, attempt, last, model.player());
 
         if (last.damageDealt > 0) {
             chrono.playAttack(attackLevel(last.grade));
@@ -290,6 +296,7 @@ public final class GameScreen extends BaseScreen {
     private void finishPhase(boolean cleared) {
         PhaseStats stats = model.finish(attempt, cleared);
         if (cleared) run.addCleared(stats);
+        game.logger.logPhase(run.id, stats, cleared ? SessionLogger.Outcome.VITORIA : SessionLogger.Outcome.DERROTA);
 
         EndScreen.Kind kind;
         if (!cleared) kind = EndScreen.Kind.DEFEAT;
