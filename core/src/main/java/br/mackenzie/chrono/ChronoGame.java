@@ -26,6 +26,7 @@ public class ChronoGame extends Game {
         input = new GameInput();
         logger = new SessionLogger(SessionLogger.defaultFolder());
         audio = new GameAudio();
+        input.start();
         audio.preload();
         setScreen(new MenuScreen(this));
     }
@@ -39,6 +40,7 @@ public class ChronoGame extends Game {
     @Override
     public void dispose() {
         super.dispose();
+        input.dispose();
         audio.dispose();
         assets.dispose();
         shapes.dispose();

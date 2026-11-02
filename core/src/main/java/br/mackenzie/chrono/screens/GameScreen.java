@@ -131,7 +131,7 @@ public final class GameScreen extends BaseScreen {
     public void render(float delta) {
         delta = Math.min(delta, 0.1f);
 
-        if (!paused && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+        if (!paused && (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || !game.input.isReady())) {
             openPause();
         } else if (paused && handlePauseInput()) {
             return;
@@ -354,6 +354,7 @@ public final class GameScreen extends BaseScreen {
     }
 
     private void resumeGame() {
+        if (!game.input.isReady()) return;
         paused = false;
         game.input.clear();
         if (isRoundInterrupted()) {
@@ -379,6 +380,7 @@ public final class GameScreen extends BaseScreen {
     private static float pauseItemTop(int i) {
         return 440f - i * 70f;
     }
+    /** Desenha o menu de pause por cima da cena congelada. */
     private void drawPause() {
         beginShapes();
         game.shapes.setColor(0f, 0f, 0f, 0.7f);
@@ -394,9 +396,13 @@ public final class GameScreen extends BaseScreen {
             String label = PAUSE_LABELS[i];
             if (i == 1) label = game.audio.isMuted() ? "Som: desligado" : "Som: ligado";
             Color c = i == pauseSelected ? Draw.GOLD : Draw.WHITE;
+            if (i == 0 && !game.input.isReady()) c = Draw.GRAY; // "Continuar" bloqueado sem o botão
             Draw.centered(batch, game.assets.medium, label, CENTER_X, pauseItemTop(i), c);
         }
-        if (isRoundInterrupted()) {
+        if (!game.input.isReady()) {
+            Draw.centered(batch, game.assets.medium, "Botão desconectado!", CENTER_X, 230f, Draw.RED);
+            Draw.centered(batch, game.assets.small, "Conecte o ESP32 na USB para continuar.", CENTER_X, 190f, Draw.WHITE);
+        } else if (isRoundInterrupted()) {
             Draw.centered(batch, game.assets.small, "Ao continuar, a rodada recomeça com o mesmo alvo.",
                 CENTER_X, 200f, Draw.GRAY);
         }

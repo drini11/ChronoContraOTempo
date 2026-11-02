@@ -11,10 +11,11 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.Align;
 import br.mackenzie.chrono.logic.RunSession;
+import br.mackenzie.chrono.input.SerialButton;
 
 public final class MenuScreen extends BaseScreen {
-    private static final int START = 0, HELP = 1, SOUND = 2;
-    private static final String[] LABELS = {"Iniciar jogo", "Como jogar", "Som", "Sair"};
+    private static final int START = 0, HELP = 1, SOUND = 2, PORT = 3;
+    private static final String[] LABELS = {"Iniciar jogo", "Como jogar", "Som", "Botão", "Sair"};
 
     private static final String HELP_TEXT =
         "1. Um tempo-alvo aparece na tela (ex.: 4,0 s). Memorize!\n"
@@ -32,7 +33,8 @@ public final class MenuScreen extends BaseScreen {
     private int selected;
     private boolean showHelp;
     private String message = "";
-
+    private String[] ports = new String[0];
+    private int portChoice;
 
 
     public MenuScreen(ChronoGame game) {
@@ -45,6 +47,28 @@ public final class MenuScreen extends BaseScreen {
     public void show() {
         game.input.clear();
         game.audio.playMusic("music/menu.mp3");
+        refreshPorts();
+    }
+
+    /** Relê a lista de portas e mantém a escolha atual, se ela ainda existir. */
+    private void refreshPorts() {
+        ports = SerialButton.listPortNames();
+        String fixed = game.input.serial().preferredPort();
+        portChoice = 0;
+        for (int i = 0; i < ports.length; i++) {
+            if (ports[i].equalsIgnoreCase(fixed)) portChoice = i + 1;
+        }
+    }
+
+    /** Escolhe a porta do botão: 0 = automática, 1..n = uma porta fixa. */
+    private void changePort(int dir) {
+        int n = ports.length + 1;
+        portChoice = (portChoice + dir + n) % n;
+        game.input.serial().setPreferredPort(portChoice == 0 ? null : ports[portChoice - 1]);
+    }
+
+    private String portChoiceName() {
+        return portChoice == 0 ? "automática" : ports[portChoice - 1];
     }
 
     @Override
@@ -62,6 +86,8 @@ public final class MenuScreen extends BaseScreen {
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) selected = (selected + LABELS.length - 1) % LABELS.length;
         if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) selected = (selected + 1) % LABELS.length;
+        if (selected == PORT && Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) changePort(-1);
+        if (selected == PORT && Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) changePort(1);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             switch (selected) {
@@ -75,6 +101,10 @@ public final class MenuScreen extends BaseScreen {
                     game.audio.setMuted(!game.audio.isMuted());
                     if (!game.audio.isMuted()) game.audio.playMusic("music/menu.mp3");
                     break;
+                case PORT:
+                    refreshPorts();
+                    game.input.serial().reconnect();
+                    break;
                 default:
                     Gdx.app.exit();
                     break;
@@ -83,7 +113,7 @@ public final class MenuScreen extends BaseScreen {
     }
 
     private static float itemTop(int i) {
-        return 420f - i * 70f;
+        return 420f - i * 58f;
     }
 
     private void draw() {
@@ -103,7 +133,7 @@ public final class MenuScreen extends BaseScreen {
         beginShapes();
         if (!showHelp) {
             shapes.setColor(1f, 1f, 1f, 0.14f);
-            shapes.rect(400f, itemTop(selected) - 50f, 480f, 58f);
+            shapes.rect(340f, itemTop(selected) - 50f, 600f, 58f);
         }
         if (flash) shapes.setColor(1f, 1f, 1f, 1f);
         else if (game.input.isReady()) shapes.setColor(0.3f, 0.85f, 0.4f, 1f);
@@ -120,15 +150,22 @@ public final class MenuScreen extends BaseScreen {
             Color c = (i == selected && !showHelp) ? Draw.GOLD : Draw.WHITE;
             String label = LABELS[i];
             if (i == SOUND) label = game.audio.isMuted() ? "Som: desligado" : "Som: ligado";
+            if (i == PORT) {
+                label = game.input.keyboardFallback() ? "Botão: teclado (modo teste)"
+                    : "Botão: " + game.input.serial().status();
+            }
             Draw.centered(batch, game.assets.medium, label, Assets.W / 2f, itemTop(i), c);
         }
         Draw.left(batch, game.assets.small,
-            flash ? "Botão acionado!" : "Pressione a barra de espaço para testar o botão",
+            flash ? "Botão acionado!"
+                : game.input.keyboardFallback() ? "Pressione a barra de espaço para testar o botão"
+                : "Acione o botão do ESP32 para testar",
             370f, 112f, flash ? Draw.GOLD : Draw.WHITE);
-        if (!message.isEmpty()) {
-            Draw.centered(batch, game.assets.small, message, Assets.W / 2f, 170f, Draw.RED);
+        String hint = "↑↓ navegar  ·  ENTER selecionar";
+        if (selected == PORT && !showHelp) {
+            hint = "Porta: " + portChoiceName() + "  ·  ←→ trocar  ·  ENTER procurar de novo";
         }
-        Draw.centered(batch, game.assets.small, "↑↓ navegar  ·  ENTER selecionar", Assets.W / 2f, 50f, Draw.GRAY);
+        Draw.centered(batch, game.assets.small, hint, Assets.W / 2f, 50f, Draw.GRAY);
         batch.end();
 
         if (showHelp) drawHelp();
